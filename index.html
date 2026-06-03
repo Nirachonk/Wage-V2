@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบบันทึกเวลาทำงาน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --deep: #0d0a1a;
+    --card: #16112b;
+    --card2: #1e1838;
+    --border: #3a2f6b;
+    --purple1: #7c3aed;
+    --purple2: #9d5cf6;
+    --purple3: #c084fc;
+    --accent: #e879f9;
+    --gold: #fbbf24;
+    --green: #34d399;
+    --red: #f87171;
+    --text: #f0ebff;
+    --muted: #9585c8;
+    --sub: #6b5fa8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--deep);
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(124,58,237,0.25) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 110%, rgba(157,92,246,0.15) 0%, transparent 60%);
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    background: rgba(22,17,43,0.9);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--purple2), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 0.04em;
+  }
+  .logo span { font-weight: 400; opacity: 0.7; font-size: 0.85rem; }
+  .badge {
+    background: linear-gradient(135deg, var(--purple1), var(--accent));
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 99px;
+    letter-spacing: 0.06em;
+  }
+
+  /* ─── LAYOUT ─── */
+  .container { max-width: 1280px; margin: 0 auto; padding: 32px 24px; }
+
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 6px;
+    margin-bottom: 28px;
+    width: fit-content;
+  }
+  .tab-btn {
+    padding: 10px 24px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, var(--purple1), var(--purple2));
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+  }
+  .tab-btn:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.06); }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ─── CARD ─── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--purple3);
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-title::before { content: ''; display: block; width: 4px; height: 18px; background: linear-gradient(var(--purple1), var(--accent)); border-radius: 2px; }
+
+  /* ─── FORM ─── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 7px; }
+  .form-group.full { grid-column: 1/-1; }
+  label { font-size: 0.85rem; font-weight: 500; color: var(--muted); letter-spacing: 0.02em; }
+  input, select {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--text);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    width: 100%;
+  }
+  input:focus, select:focus {
+    border-color: var(--purple2);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(1) saturate(3) hue-rotate(220deg); }
+  .time-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+  .time-sep { color: var(--muted); font-size: 1.1rem; text-align: center; }
+
+  .btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--purple1), var(--purple2));
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(124,58,237,0.5); }
+  .btn-secondary {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-secondary:hover { border-color: var(--purple2); color: var(--text); }
+  .btn-danger { background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+  .btn-danger:hover { background: rgba(248,113,113,0.25); }
+  .form-actions { margin-top: 20px; display: flex; gap: 10px; }
+
+  /* ─── STATS GRID ─── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-box::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--purple1), var(--accent));
+    border-radius: 14px 14px 0 0;
+  }
+  .stat-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+  .stat-value { font-family: 'Chakra Petch', sans-serif; font-size: 1.6rem; font-weight: 700; color: var(--text); }
+  .stat-sub { font-size: 0.78rem; color: var(--sub); margin-top: 4px; }
+
+  /* ─── TABLE ─── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { border-bottom: 2px solid var(--border); }
+  th { padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+  td { padding: 14px 16px; font-size: 0.9rem; border-bottom: 1px solid rgba(58,47,107,0.5); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(124,58,237,0.06); }
+
+  .chip {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .chip-ot { background: rgba(251,191,36,0.15); color: var(--gold); border: 1px solid rgba(251,191,36,0.3); }
+  .chip-normal { background: rgba(52,211,153,0.15); color: var(--green); border: 1px solid rgba(52,211,153,0.3); }
+  .chip-holiday { background: rgba(232,121,249,0.15); color: var(--accent); border: 1px solid rgba(232,121,249,0.3); }
+  .chip-weekend { background: rgba(248,113,113,0.15); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+
+  .emp-name { font-weight: 600; color: var(--purple3); }
+  .money { font-family: 'Chakra Petch', sans-serif; font-weight: 600; }
+  .money-total { color: var(--gold); }
+  .money-normal { color: var(--green); }
+  .money-ot { color: var(--accent); }
+
+  .btn-view {
+    padding: 6px 14px;
+    border: 1px solid var(--purple1);
+    background: rgba(124,58,237,0.1);
+    color: var(--purple3);
+    border-radius: 8px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-view:hover { background: rgba(124,58,237,0.25); color: #fff; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 820px;
+    width: 95%;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    animation: modalIn .25s ease;
+  }
+  @keyframes modalIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: var(--muted);
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .modal-close:hover { background: rgba(248,113,113,0.2); color: var(--red); }
+  .modal-emp-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+  .emp-avatar {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, var(--purple1), var(--accent));
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .modal-emp-name { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+  .modal-emp-sub { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+  .modal-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+  .mini-stat {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+  .mini-stat .v { font-family: 'Chakra Petch', sans-serif; font-size: 1.25rem; font-weight: 700; }
+  .mini-stat .l { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--card);
+    border: 1px solid var(--green);
+    border-radius: 12px;
+    padding: 14px 22px;
+    color: var(--green);
+    font-weight: 600;
+    font-size: 0.9rem;
+    z-index: 9999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all .3s ease;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ─── EMPTY ─── */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--sub);
+  }
+  .empty svg { opacity: 0.3; margin-bottom: 12px; }
+  .empty p { font-size: 0.95rem; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--deep); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media(max-width:768px){
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    .modal-stats { grid-template-columns: 1fr 1fr; }
+  }
+  @media(max-width:480px){
+    .stats-grid { grid-template-columns: 1fr; }
+    .tabs { width: 100%; }
+    .tab-btn { flex: 1; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">TimeTrack <span>| ระบบบันทึกเวลาทำงาน</span></div>
+  </div>
+  <div class="badge">HR SYSTEM</div>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('entry')">📋 บันทึกเวลาทำงาน</button>
+    <button class="tab-btn" onclick="switchTab('summary')">📊 สรุปรายงาน</button>
+  </div>
+
+  <!-- ─── PAGE: ENTRY ─── -->
+  <div id="page-entry" class="page active">
+    <div class="card">
+      <div class="card-title">กรอกข้อมูลเวลาทำงาน</div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>ชื่อ-สกุล พนักงาน</label>
+          <input type="text" id="inp-name" placeholder="กรุณากรอกชื่อ-สกุล" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>วันที่ทำงาน</label>
+          <input type="date" id="inp-date">
+        </div>
+        <div class="form-group">
+          <label>ค่าแรงต่อวัน (บาท)</label>
+          <input type="number" id="inp-wage" placeholder="เช่น 500" min="0">
+        </div>
+        <div class="form-group full">
+          <label>เวลาทำงาน</label>
+          <div class="time-row">
+            <input type="time" id="inp-start" value="08:00">
+            <div class="time-sep">—</div>
+            <input type="time" id="inp-end" value="17:00">
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addEntry()">✚ บันทึกเวลาทำงาน</button>
+        <button class="btn btn-secondary" onclick="clearForm()">ล้างข้อมูล</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">รายการที่บันทึกล่าสุด</div>
+      <div class="table-wrap">
+        <table id="recent-table">
+          <thead>
+            <tr>
+              <th>ชื่อ-สกุล</th>
+              <th>วันที่</th>
+              <th>เวลาเข้า</th>
+              <th>เวลาออก</th>
+              <th>ชม.ปกติ</th>
+              <th>ชม.OT</th>
+              <th>ประเภท</th>
+              <th>ค่าแรง</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="recent-tbody"></tbody>
+        </table>
+        <div id="recent-empty" class="empty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <p>ยังไม่มีรายการบันทึก</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PAGE: SUMMARY ─── -->
+  <div id="page-summary" class="page">
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">พนักงานทั้งหมด</div>
+        <div class="stat-value" id="s-emp">0</div>
+        <div class="stat-sub">คน</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">รายการทั้งหมด</div>
+        <div class="stat-value" id="s-records">0</div>
+        <div class="stat-sub">รายการ</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">ชม.ทำงานรวม</div>
+        <div class="stat-value" id="s-hours">0</div>
+        <div class="stat-sub">ชั่วโมง</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">ค่าแรงรวมทั้งหมด</div>
+        <div class="stat-value money-total" id="s-total">฿0</div>
+        <div class="stat-sub">บาท</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">สรุปค่าแรงพนักงานรายบุคคล</div>
+      <div class="table-wrap">
+        <table id="summary-table">
+          <thead>
+            <tr>
+              <th>ชื่อ-สกุล</th>
+              <th>วันทำงาน</th>
+              <th>ชม.ปกติ (×1)</th>
+              <th>ชม.OT (×1.5)</th>
+              <th>ค่าแรงปกติ</th>
+              <th>ค่า OT</th>
+              <th>รวม</th>
+              <th>รายละเอียด</th>
+            </tr>
+          </thead>
+          <tbody id="summary-tbody"></tbody>
+        </table>
+        <div id="summary-empty" class="empty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p>ยังไม่มีข้อมูลพนักงาน</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL ─── -->
+<div class="modal-overlay" id="emp-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-emp-header">
+      <div class="emp-avatar" id="modal-avatar"></div>
+      <div>
+        <div class="modal-emp-name" id="modal-name"></div>
+        <div class="modal-emp-sub" id="modal-sub"></div>
+      </div>
+    </div>
+    <div class="modal-stats">
+      <div class="mini-stat">
+        <div class="v money-normal" id="modal-normal-h">0</div>
+        <div class="l">ชั่วโมงปกติ</div>
+      </div>
+      <div class="mini-stat">
+        <div class="v money-ot" id="modal-ot-h">0</div>
+        <div class="l">ชั่วโมง OT</div>
+      </div>
+      <div class="mini-stat">
+        <div class="v money-total" id="modal-total-pay">฿0</div>
+        <div class="l">ค่าแรงรวม</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>วันที่</th>
+            <th>วัน</th>
+            <th>เวลาเข้า</th>
+            <th>เวลาออก</th>
+            <th>ชม.ปกติ</th>
+            <th>ชม.OT</th>
+            <th>ประเภท</th>
+            <th>ค่าแรง</th>
+          </tr>
+        </thead>
+        <tbody id="modal-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="toast">✓ <span id="toast-msg"></span></div>
+
+<script>
+const DAYS_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+let entries = JSON.parse(localStorage.getItem('tt_entries') || '[]');
+
+function save() { localStorage.setItem('tt_entries', JSON.stringify(entries)); }
+
+function fmt(n) { return n.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtH(h) { return h.toFixed(2); }
+
+// ─── CALCULATE WAGES ───
+function calcEntry(entry) {
+  const [sh, sm] = entry.start.split(':').map(Number);
+  const [eh, em] = entry.end.split(':').map(Number);
+  const startMin = sh * 60 + sm;
+  const endMin   = eh * 60 + em;
+  const totalMin = Math.max(0, endMin - startMin);
+
+  const dateObj = new Date(entry.date + 'T00:00:00');
+  const dow = dateObj.getDay(); // 0=Sun, 6=Sat
+  const isWeekend = dow === 0 || dow === 6;
+
+  const workStart = 8 * 60;   // 08:00
+  const workEnd   = 17 * 60;  // 17:00
+
+  let normalHours = 0, otHours = 0;
+
+  if (isWeekend) {
+    // All hours on weekend = OT 1.5×
+    otHours = totalMin / 60;
+  } else {
+    // Normal hours: overlap with 08:00–17:00
+    const overlapStart = Math.max(startMin, workStart);
+    const overlapEnd   = Math.min(endMin, workEnd);
+    const normalMin = Math.max(0, overlapEnd - overlapStart);
+    normalHours = normalMin / 60;
+
+    // OT hours: after 17:00
+    if (endMin > workEnd) {
+      otHours = (endMin - Math.max(startMin, workEnd)) / 60;
+    }
+  }
+
+  const hourlyRate = entry.wage / 8;
+  const normalPay  = normalHours * hourlyRate;
+  const otPay      = otHours * hourlyRate * 1.5;
+  const totalPay   = normalPay + otPay;
+
+  return { normalHours, otHours, normalPay, otPay, totalPay, isWeekend, dow };
+}
+
+// ─── RENDER RECENT TABLE ───
+function renderRecent() {
+  const tbody = document.getElementById('recent-tbody');
+  const empty = document.getElementById('recent-empty');
+  if (!entries.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = entries.slice().reverse().slice(0, 30).map((e, ri) => {
+    const i = entries.length - 1 - ri;
+    const c = calcEntry(e);
+    const typeChip = c.isWeekend
+      ? '<span class="chip chip-weekend">วันหยุด</span>'
+      : c.otHours > 0
+        ? '<span class="chip chip-ot">มี OT</span>'
+        : '<span class="chip chip-normal">ปกติ</span>';
+    return `<tr>
+      <td class="emp-name">${e.name}</td>
+      <td>${e.date}<br><small style="color:var(--muted)">${DAYS_TH[c.dow]}</small></td>
+      <td>${e.start}</td>
+      <td>${e.end}</td>
+      <td class="money money-normal">${fmtH(c.normalHours)}</td>
+      <td class="money money-ot">${fmtH(c.otHours)}</td>
+      <td>${typeChip}</td>
+      <td class="money money-total">฿${fmt(c.totalPay)}</td>
+      <td><button class="btn-danger btn" style="padding:5px 10px;font-size:0.78rem" onclick="deleteEntry(${i})">ลบ</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── RENDER SUMMARY ───
+function renderSummary() {
+  const tbody = document.getElementById('summary-tbody');
+  const empty = document.getElementById('summary-empty');
+
+  // Group by name
+  const map = {};
+  entries.forEach(e => {
+    if (!map[e.name]) map[e.name] = { wage: e.wage, records: [] };
+    map[e.name].records.push(e);
+    map[e.name].wage = e.wage; // use latest
+  });
+
+  const names = Object.keys(map);
+  document.getElementById('s-emp').textContent = names.length;
+  document.getElementById('s-records').textContent = entries.length;
+
+  let totalHours = 0, grandTotal = 0;
+
+  if (!names.length) {
+    tbody.innerHTML = '';
+    empty.style.display = '';
+    document.getElementById('s-hours').textContent = '0';
+    document.getElementById('s-total').textContent = '฿0';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = names.map(name => {
+    const g = map[name];
+    let nh = 0, oh = 0, np = 0, op = 0;
+    g.records.forEach(e => {
+      const c = calcEntry(e);
+      nh += c.normalHours; oh += c.otHours;
+      np += c.normalPay;   op += c.otPay;
+    });
+    const total = np + op;
+    totalHours += nh + oh;
+    grandTotal += total;
+    return `<tr>
+      <td class="emp-name">${name}</td>
+      <td>${g.records.length} วัน</td>
+      <td class="money money-normal">${fmtH(nh)} ชม.</td>
+      <td class="money money-ot">${fmtH(oh)} ชม.</td>
+      <td class="money money-normal">฿${fmt(np)}</td>
+      <td class="money money-ot">฿${fmt(op)}</td>
+      <td class="money money-total">฿${fmt(total)}</td>
+      <td><button class="btn-view" onclick="openModal('${name.replace(/'/g,"\\'")}')">ดูรายละเอียด ▸</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('s-hours').textContent = fmtH(totalHours);
+  document.getElementById('s-total').textContent = '฿' + fmt(grandTotal);
+}
+
+// ─── MODAL ───
+function openModal(name) {
+  const records = entries.filter(e => e.name === name);
+  document.getElementById('modal-name').textContent = name;
+  document.getElementById('modal-avatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('modal-sub').textContent = `${records.length} รายการทำงาน`;
+
+  let nh=0, oh=0, np=0, op=0;
+  const rows = records.slice().sort((a,b) => a.date.localeCompare(b.date)).map(e => {
+    const c = calcEntry(e);
+    nh += c.normalHours; oh += c.otHours;
+    np += c.normalPay;   op += c.otPay;
+    const typeChip = c.isWeekend
+      ? '<span class="chip chip-weekend">วันหยุด ×1.5</span>'
+      : c.otHours > 0
+        ? '<span class="chip chip-ot">มี OT</span>'
+        : '<span class="chip chip-normal">ปกติ</span>';
+    return `<tr>
+      <td>${e.date}</td>
+      <td>${DAYS_TH[c.dow]}</td>
+      <td>${e.start}</td>
+      <td>${e.end}</td>
+      <td class="money money-normal">${fmtH(c.normalHours)}</td>
+      <td class="money money-ot">${fmtH(c.otHours)}</td>
+      <td>${typeChip}</td>
+      <td class="money money-total">฿${fmt(c.totalPay)}</td>
+    </tr>`;
+  });
+
+  document.getElementById('modal-normal-h').textContent = fmtH(nh) + ' ชม.';
+  document.getElementById('modal-ot-h').textContent = fmtH(oh) + ' ชม.';
+  document.getElementById('modal-total-pay').textContent = '฿' + fmt(np + op);
+  document.getElementById('modal-tbody').innerHTML = rows.join('');
+  document.getElementById('emp-modal').classList.add('open');
+}
+function closeModal() { document.getElementById('emp-modal').classList.remove('open'); }
+document.getElementById('emp-modal').addEventListener('click', e => { if(e.target === e.currentTarget) closeModal(); });
+
+// ─── ADD ENTRY ───
+function addEntry() {
+  const name  = document.getElementById('inp-name').value.trim();
+  const date  = document.getElementById('inp-date').value;
+  const start = document.getElementById('inp-start').value;
+  const end   = document.getElementById('inp-end').value;
+  const wage  = parseFloat(document.getElementById('inp-wage').value);
+
+  if (!name)  { alert('กรุณากรอกชื่อ-สกุล'); return; }
+  if (!date)  { alert('กรุณาเลือกวันที่'); return; }
+  if (!start || !end) { alert('กรุณากรอกเวลา'); return; }
+  if (isNaN(wage) || wage <= 0) { alert('กรุณากรอกค่าแรงต่อวัน'); return; }
+  if (start >= end)  { alert('เวลาออกต้องมากกว่าเวลาเข้า'); return; }
+
+  entries.push({ name, date, start, end, wage });
+  save();
+  renderRecent();
+  renderSummary();
+  showToast(`บันทึกเวลาทำงานของ ${name} สำเร็จ`);
+}
+
+function deleteEntry(i) {
+  if (!confirm('ยืนยันการลบรายการนี้?')) return;
+  entries.splice(i, 1);
+  save();
+  renderRecent();
+  renderSummary();
+  showToast('ลบรายการแล้ว');
+}
+
+function clearForm() {
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-date').value = '';
+  document.getElementById('inp-start').value = '08:00';
+  document.getElementById('inp-end').value = '17:00';
+  document.getElementById('inp-wage').value = '';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i===0) === (tab==='entry')));
+  document.getElementById('page-entry').classList.toggle('active', tab==='entry');
+  document.getElementById('page-summary').classList.toggle('active', tab==='summary');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─── INIT ───
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('inp-date').value = today;
+renderRecent();
+renderSummary();
+</script>
+</body>
+</html>
